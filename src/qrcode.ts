@@ -1,3 +1,5 @@
+type coord = [number, number];
+
 export default class QRCodeGenerator {
   bytes: Uint8Array = new Uint8Array();
   message: Uint8Array = new Uint8Array();
@@ -9,6 +11,7 @@ export default class QRCodeGenerator {
   mode: 'numeric'|'alphanumeric'|'binary'|'kanji' = 'alphanumeric';
   cellSize: number = 0;
   showGrid: boolean = false;
+  curPos: coord = [0,0];
   
   constructor(data_to_encode: any = null) {
     if (data_to_encode) this.encode;
@@ -48,9 +51,76 @@ export default class QRCodeGenerator {
     this.drawLocators();
     this.drawAlignment();
     this.drawTimingStrips();
+    this.drawModeIndicator();
     if (this.showGrid) this.drawGrid();
   }
-  
+
+  drawModeIndicator() {
+    let mode = 0;
+    switch(this.mode) {
+      case 'kanji':
+        mode = 8;
+        break;
+      case 'binary':
+        mode = 4;
+        break;
+      case 'numeric':
+        mode = 1;
+        break;
+      case 'alphanumeric':
+        mode = 2;
+        break;
+    }
+
+    let modeBits = [0,0,0,0].map((v,i) => mode>>i&1).reverse() as Array<0|1>;
+    console.log(modeBits);
+    this.drawData(modeBits);
+  }
+
+  drawData(bits: Array<0|1>) {
+    if (!this.canvasCtx) throw new Error('No canvas set');
+    this.canvasCtx.fillStyle = '#000000';
+    this.curPos = [32,32];
+    for(const bit of bits) {
+      console.log(this.curPos);
+      if (!!bit) {
+        console.log('draw');
+        this.drawCell(...this.curPos);
+      }
+      this.nextPos();
+    }
+  }
+
+  nextPos() {
+    let v: 1|0|-1 = 1; //vertical movement
+    let h: 1|-1 = 1 //are we going left or right 1=right -1=left
+    switch (this.curPos[0] % 4) {
+      case 0: //we're on the right going up
+        v = 0;
+        h = -1;
+        break;
+      case 1: //we're on the left going down
+        v = 0;
+        h = 1;
+        break;
+      case 2: //we're on the right going down
+        v = 1;
+        h = -1;
+        break;
+      case 3: //we're on the left going up
+        v = -1;
+        h = 1;
+        break;
+    }
+
+    let nextPos: coord = [this.curPos[0] + h, this.curPos[1] + v];
+
+    //TODO check if nextPos collides with functional cell, and if so, do we go around or skip past
+    //TODO check if we need to turn around
+
+    this.curPos = nextPos;
+  }
+
   drawGrid() {
     if (!this.canvasCtx) throw new Error('No canvas set');
     this.canvasCtx.lineWidth = 1;
@@ -70,22 +140,22 @@ export default class QRCodeGenerator {
   drawLocators() {
     if (!this.canvasCtx) throw new Error('No canvas set');
     const locSize = 7;
-    const locatorPositions = [ [0,0], [0,this.gridSize - locSize], [this.gridSize - locSize, 0] ];
+    const locatorPositions: Array<coord> = [ [0,0], [0,this.gridSize - locSize], [this.gridSize - locSize, 0] ];
     for(const locPos of locatorPositions) {
       //draw outer ring
-      let [x, y] = this.coordsToPos(locPos[0], locPos[1]);
+      let [x, y] = this.coordsToPos(...locPos);
       let w = locSize * this.cellSize;
       this.canvasCtx.fillStyle = '#000000';
       this.canvasCtx.fillRect(x, y, w, w);
 
       //draw white inner ring
-      [x, y] = this.coordsToPos(locPos[0] + 1, locPos[1] + 1);
+      [x, y] = this.coordsToPos(...locPos.map(k => k+1) as coord);
       w = (locSize - 2) * this.cellSize;
       this.canvasCtx.fillStyle = '#ffffff';
       this.canvasCtx.fillRect(x, y, w, w);
 
       //draw center black box
-      [x, y] = this.coordsToPos(locPos[0] + 2, locPos[1] + 2);
+      [x, y] = this.coordsToPos(...locPos.map(k => k+2) as coord);
       w = (locSize - 4) * this.cellSize;
       this.canvasCtx.fillStyle = '#000000';
       this.canvasCtx.fillRect(x, y, w, w);
