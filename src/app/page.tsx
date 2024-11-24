@@ -1,6 +1,7 @@
 'use client'
 import { VStack, Center, Container, Input, Box } from "@chakra-ui/react"
 import { FormEvent, useEffect, useRef, useState } from "react"
+import QRCodeGenerator from '@/qrcode';
 
 type QRCodeProps = {
   stringData: string,
@@ -22,41 +23,12 @@ function QRCode(props: QRCodeProps) {
   const { stringData } = props;
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    const context = canvas?.getContext('2d')
-    if (canvas && context) {
-      const codeBits = textToBinary(stringData)
-      const ch = context.canvas.height;
-      const cw = context.canvas.width;
-
-      const [grid_w, grid_h] = [33,33];
-      const [cell_w, cell_h] = [cw / grid_w, ch / grid_h];
-
-      function coordsToPos(x: number, y: number): Array<number> {
-        return [cell_w * (x-1), cell_h * (y-1)]
-      }
-
-      function drawCell(ctx: CanvasRenderingContext2D,x: number, y: number, color: string = "#000000"): void {
-        ctx.fillStyle=color;
-        const [cx, cy] = coordsToPos(x,y)
-        ctx.fillRect(cx, cy, cell_w, cell_h);
-      }
-      
-      context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-      context.fillStyle="#ffffff";
-      context.fillRect(0,0,context.canvas.width, context.canvas.height);
-      context.fillStyle="#000000";
-      let pos = 0;
-      for (let y = 1;y <= grid_w; y++) {
-        for(let x = 1;x <= grid_h;x++) {
-          if (codeBits[pos] == '1') drawCell(context, x, y)
-          pos++;
-        }
-      }
-    }
-
-    return () => {
-      context?.reset();
+    const qrcode = new QRCodeGenerator();
+    const canvas = canvasRef.current;
+    if (canvas) {
+      qrcode.useCanvas(canvas);
+      qrcode.showGrid = true;
+      qrcode.render();
     }
   }, [canvasRef, stringData])
 
@@ -70,7 +42,7 @@ function QRCode(props: QRCodeProps) {
 export default function Home() {
 
   const [myString, setMyString] = useState('hello');
-  const size = "200px"
+  const size = "400px"
 
   function handleInput(event: FormEvent<HTMLInputElement>): void {
     setMyString(event.currentTarget.value)
