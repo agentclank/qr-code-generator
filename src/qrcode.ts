@@ -64,6 +64,16 @@ const MaskPatterns: Array<Mask> = [
   ([x, y]: coord) => ((( ((x + y) % 2) + ((x * y) % 3) ) % 2 ) == 0)
 ]
 
+function decToBin(dec: number): string {
+  return (dec >>> 0).toString(2);
+}
+
+function padTo(str: string, pad: string, len: number = 0) {
+  let result = str;
+  while (str.length <= len) result = pad + result;
+  return result;
+}
+
 export default class QRCodeGenerator {
   bytes: Uint8Array = new Uint8Array();
   message: Uint8Array = new Uint8Array();
@@ -78,12 +88,14 @@ export default class QRCodeGenerator {
   matrix: BitMatrix = [[]];
   errCorrectionLevel: ErrorCorrectionLevel = ERR_LVLS.LOW
   functionalMatrix: BitMatrix;
+  maskPattern: number = 0;
   
   constructor(data_to_encode: any = null) {
     if (data_to_encode) this.encode;
     this.resetMatrix();
     this.setFunctionPatterns();
     this.functionalMatrix = this.matrix;
+    this.determineMaskPattern();
     //TODO encode data to matrix
     //TODO score mask patterns to determine best one
     //TODO add version and format data
@@ -104,6 +116,14 @@ export default class QRCodeGenerator {
     this.matrix = arr;
   }
 
+  reserveFormatRegions() {
+    this.square([-2,-2], 11, 0);
+    for (let i=0;i <= 7;i++) {
+      this.setCell([this.gridSize-8 + i,8], 0)
+      this.setCell([8,this.gridSize-8 + i], 0)
+    }
+  }
+
   setFunctionPatterns() {
     this.setLocators();
     this.setSeparators();
@@ -111,12 +131,18 @@ export default class QRCodeGenerator {
     this.setTimingPatterns();
     this.setDarkModule();
 
+    this.reserveFormatRegions();
+
     if (this.version >= 7) this.setVersionModules();
   }
 
+  determineMaskPattern() {
+    //score and apply best one
+    this.maskPattern = 0;
+  }
+
   applyMask() {
-    //TODO score all patterns before applying one
-    let mask = MaskPatterns[0];
+    let mask = MaskPatterns[this.maskPattern]
     for (let i=0;i<this.gridSize;i++) {
       for (let k=0;k<this.gridSize;k++) {
         let pos: coord = [i,k];
@@ -166,7 +192,7 @@ export default class QRCodeGenerator {
     this.canvasCtx.fillRect(0,0,this.canvasCtx.canvas.width, this.canvasCtx.canvas.height);
     for(let i=0;i<this.matrix.length;i++) {
       for(let k=0;k<this.matrix[i].length;k++) {
-        this.drawCell(i, k, this.matrix[i][k] as 0|1|null);
+        this.drawCell([i, k], this.matrix[i][k] as 0|1|null);
       }
     }
     if (this.showGrid) this.drawGrid();
@@ -306,8 +332,9 @@ export default class QRCodeGenerator {
     }
   }
 
-  drawCell(x: number, y: number, val: 0|1|null = 1) {
+  drawCell(pos: coord, val: 0|1|null = 1) {
     if (!this.canvasCtx) throw new Error('No canvas set');
+    const [x, y] = pos;
     let [l, t] = this.coordsToPos(x, y);
     let color = '#0000ff';
     if (val == 1) color = '#000000'
