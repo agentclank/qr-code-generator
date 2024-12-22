@@ -119,14 +119,7 @@ export default class QRCodeGenerator {
     let formatString = errLevel + maskPattern; //concatenate error correction level and mask pattern
     const generator = '10100110111'; //generator polynomial for error correction x^10 + x^8 + x^5 + x^4 + x^2 + x^1 + x^0 
 
-    let errBits = formatString.padEnd(15, '0').replace(/^0+/, ''); //pad right with zeroes until length=15
-    do {
-      let gen = generator.padEnd(errBits.length, '0');
-      let xor = (parseInt(errBits, 2) ^ parseInt(gen.padEnd(errBits.length, '0'), 2)).toString(2); //xor with generator
-      errBits = xor.replace(/^0+/, ''); //remove leading zeroes
-    } while (errBits.length > 10); //repeat until length <= 10
-    
-    formatString = formatString + errBits.padStart(10, '0'); //add error correction bits to format string
+    formatString = this.generateErrorCorrection(formatString, generator, 15);
     let maskString = '101010000010010';
     let format = (parseInt(formatString, 2) ^ parseInt(maskString, 2)).toString(2).padStart(15, '0'); //xor with mask string
     return format;
@@ -204,6 +197,25 @@ export default class QRCodeGenerator {
         }
       }
     }
+  }
+
+  generateVersionString() {
+    let versionString = this.version.toString(2).padStart(6, '0'); //convert version to 6-bit binary
+    let generator = '1111100100101'; //generator for version info x^12 + x^11 + x^10 + x^9 + x^8 + x^5 + x^2 + x^0     
+
+    return this.generateErrorCorrection(versionString, generator, 18);
+  }
+
+  generateErrorCorrection(data: string, generator:string, len: number) {
+    let errBits = data.padEnd(len, '0').replace(/^0+/, ''); //pad right with zeroes until length=18
+    do {
+      let gen = generator.padEnd(errBits.length, '0');
+      let xor = (parseInt(errBits, 2) ^ parseInt(gen.padEnd(errBits.length, '0'), 2)).toString(2); //xor with generator
+      errBits = xor.replace(/^0+/, ''); //remove leading zeroes
+    } while (errBits.length > (len - data.length)); //repeat until length <= 12
+
+    let result = data + errBits.padStart((len - data.length), '0'); //add error correction bits to version string
+    return result;
   }
 
   setVersionModules() {
