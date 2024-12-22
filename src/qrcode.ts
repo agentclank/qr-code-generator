@@ -76,7 +76,7 @@ export default class QRCodeGenerator {
   canvas?: HTMLCanvasElement;
   canvasCtx?: CanvasRenderingContext2D;
   canvasSize?: number;
-  version: number = 4;
+  version: number = 7;
   mode: 'numeric'|'alphanumeric'|'binary'|'kanji' = 'alphanumeric';
   cellSize: number = 0;
   showGrid: boolean = false;
@@ -219,7 +219,14 @@ export default class QRCodeGenerator {
   }
 
   setVersionModules() {
-    //TODO
+    let versionString = this.generateVersionString().split('').reverse().join('');
+
+    for (let i=0; i<18; i++) {
+      let y = Math.floor(i / 3);
+      let x = this.gridSize - 11 + i % 3;
+      this.setCell([y, x], parseInt(versionString[i]) as 0|1);
+      this.setCell([x, y], parseInt(versionString[i]) as 0|1);
+    }
   }
 
   useCanvas(canvas: HTMLCanvasElement) {
