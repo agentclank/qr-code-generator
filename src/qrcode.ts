@@ -1,3 +1,5 @@
+import { format } from "path";
+
 type coord = [number, number];
 type BitMatrix = Array<Array<0|1|null|undefined>>;
 type ErrorCorrectionLevel = 0|1|2|3;
@@ -68,12 +70,6 @@ function decToBin(dec: number): string {
   return (dec >>> 0).toString(2);
 }
 
-function padTo(str: string, pad: string, len: number = 0) {
-  let result = str;
-  while (str.length <= len) result = pad + result;
-  return result;
-}
-
 export default class QRCodeGenerator {
   bytes: Uint8Array = new Uint8Array();
   message: Uint8Array = new Uint8Array();
@@ -86,16 +82,16 @@ export default class QRCodeGenerator {
   showGrid: boolean = false;
   curPos: coord = [0,0];
   matrix: BitMatrix = [[]];
-  errCorrectionLevel: ErrorCorrectionLevel = ERR_LVLS.LOW
+  errCorrectionLevel: ErrorCorrectionLevel = ERR_LVLS.HIGH
   functionalMatrix: BitMatrix;
   maskPattern: number = 0;
   
   constructor(data_to_encode: any = null) {
     if (data_to_encode) this.encode;
     this.resetMatrix();
+    // this.determineMaskPattern();
     this.setFunctionPatterns();
     this.functionalMatrix = this.matrix;
-    this.determineMaskPattern();
     //TODO encode data to matrix
     //TODO score mask patterns to determine best one
     //TODO add version and format data
@@ -116,11 +112,67 @@ export default class QRCodeGenerator {
     this.matrix = arr;
   }
 
-  reserveFormatRegions() {
-    this.square([-2,-2], 11, 0);
-    for (let i=0;i <= 7;i++) {
-      this.setCell([this.gridSize-8 + i,8], 0)
-      this.setCell([8,this.gridSize-8 + i], 0)
+  generateFormatString() {
+    //TODO: convert this to actual binary operations instead of string manipulation
+    let errLevel = this.errCorrectionLevel.toString(2).padStart(2, '0'); //convert error correction level to 2-bit binary
+    let maskPattern = this.maskPattern.toString(2).padStart(3, '0'); //convert mask pattern to 3-bit binary
+    let formatString = errLevel + maskPattern; //concatenate error correction level and mask pattern
+    const generator = '10100110111'; //generator polynomial for error correction x^10 + x^8 + x^5 + x^4 + x^2 + x^1 + x^0 
+
+    let errBits = formatString.padEnd(15, '0').replace(/^0+/, ''); //pad right with zeroes until length=15
+    do {
+      let gen = generator.padEnd(errBits.length, '0');
+      let xor = (parseInt(errBits, 2) ^ parseInt(gen.padEnd(errBits.length, '0'), 2)).toString(2); //xor with generator
+      errBits = xor.replace(/^0+/, ''); //remove leading zeroes
+    } while (errBits.length > 10); //repeat until length <= 10
+    
+    formatString = formatString + errBits.padStart(10, '0'); //add error correction bits to format string
+    let maskString = '101010000010010';
+    let format = (parseInt(formatString, 2) ^ parseInt(maskString, 2)).toString(2).padStart(15, '0'); //xor with mask string
+    return format;
+  }
+
+  setFormatInfo() {
+    let formatString = this.generateFormatString();
+    let formatPositions: Array<Array<coord>> = [
+      [
+        [0,8],
+        [1,8],
+        [2,8],
+        [3,8],
+        [4,8],
+        [5,8],
+        [7,8],
+        [8,8],
+        [8,7],
+        [8,5],
+        [8,4],
+        [8,3],
+        [8,2],
+        [8,1],
+        [8,0],
+      ],[
+        [8,this.gridSize-1],
+        [8,this.gridSize-2],
+        [8,this.gridSize-3],
+        [8,this.gridSize-4],
+        [8,this.gridSize-5],
+        [8,this.gridSize-6],
+        [8,this.gridSize-7],
+        [this.gridSize-8,8],
+        [this.gridSize-7,8],
+        [this.gridSize-6,8],
+        [this.gridSize-5,8],
+        [this.gridSize-4,8],
+        [this.gridSize-3,8],
+        [this.gridSize-2,8],
+        [this.gridSize-1,8],
+      ]
+    ];
+
+    for (let i=0;i<formatString.length;i++) {
+      this.setCell(formatPositions[0][i], parseInt(formatString[i]) as 0|1);
+      this.setCell(formatPositions[1][i], parseInt(formatString[i]) as 0|1);
     }
   }
 
@@ -130,8 +182,7 @@ export default class QRCodeGenerator {
     this.setAlignmentSquares();
     this.setTimingPatterns();
     this.setDarkModule();
-
-    this.reserveFormatRegions();
+    this.setFormatInfo();
 
     if (this.version >= 7) this.setVersionModules();
   }
