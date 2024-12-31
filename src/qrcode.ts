@@ -4,6 +4,7 @@ type coord = [number, number];
 type BitMatrix = Array<Array<0|1|null|undefined>>;
 type ErrorCorrectionLevel = 0|1|2|3;
 interface Mask { (pos: coord): boolean; }
+type Mode = 'n'|'a'|'b'|'k'; //numeric, alphanumeric, binary, kanji
 
 const AlignmentPositions: {[key: number]: Array<number>} = {
   1: [],
@@ -309,7 +310,7 @@ const CAPACITIES: {[key: number]: {[key: number]: {[key: string]: number}}} = {
   }
 }
 
-function getMinCapacityVersion(mode: 'n'|'a'|'b'|'k', errLevel: ErrorCorrectionLevel): number {
+function getMinCapacityVersion(mode: Mode, errLevel: ErrorCorrectionLevel): number {
   let minVersion = 1;
   let capacity = CAPACITIES[minVersion][errLevel][mode];
   while (capacity < 0) {
@@ -331,7 +332,7 @@ export default class QRCodeGenerator {
   canvasCtx?: CanvasRenderingContext2D;
   canvasSize?: number;
   version: number = 7;
-  mode: 'numeric'|'alphanumeric'|'binary'|'kanji' = 'alphanumeric';
+  mode: Mode = 'a';
   cellSize: number = 0;
   showGrid: boolean = false;
   curPos: coord = [0,0];
@@ -453,6 +454,17 @@ export default class QRCodeGenerator {
     }
   }
 
+  determineMode(data_to_encode: any): Mode {
+    let numeric_regex = /^[0-9]+$/;
+    let alphanumeric_regex = /^[A-Z0-9 $%*+-./:]+$/;
+    let kanji_regex = /[^\x00-\x7F]/;
+
+    if (numeric_regex.test(data_to_encode)) return 'n';
+    if (alphanumeric_regex.test(data_to_encode)) return 'a';
+    if (kanji_regex.test(data_to_encode)) return 'k';
+    return 'b';
+  }
+  
   generateVersionString() {
     let versionString = this.version.toString(2).padStart(6, '0'); //convert version to 6-bit binary
     let generator = '1111100100101'; //generator for version info x^12 + x^11 + x^10 + x^9 + x^8 + x^5 + x^2 + x^0     
@@ -493,14 +505,7 @@ export default class QRCodeGenerator {
   }
 
   encode(data_to_encode: any) {
-    switch(typeof data_to_encode) {
-      case 'string':
-        this.mode = 'alphanumeric';
-        this.bytes = Uint8Array.from(data_to_encode.split('').map(letter => letter.charCodeAt(0)));
-        break;
-      default:
-        throw new Error('Not yet implemented!');
-    }
+    
   }
 
   encodeMessage() {
@@ -525,16 +530,16 @@ export default class QRCodeGenerator {
   setModeModeIndicator() {
     let mode = 0;
     switch(this.mode) {
-      case 'kanji':
+      case 'k':
         mode = 8;
         break;
-      case 'binary':
+      case 'b':
         mode = 4;
         break;
-      case 'numeric':
+      case 'n':
         mode = 1;
         break;
-      case 'alphanumeric':
+      case 'a':
         mode = 2;
         break;
     }
