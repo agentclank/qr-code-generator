@@ -754,12 +754,11 @@ export default class QRCodeGenerator {
   }
 
   determineVersion(data_to_encode: string): Version {
-    let version = 1;
-    let capacity = 0;
-    while (capacity < data_to_encode.length && version < 40) {
-      capacity = CAPACITIES[version][this.errCorrectionLevel][this.mode];
+    let version = 0, capacity = 0;
+    do {
       version++;
-    }
+      capacity = CAPACITIES[version][this.errCorrectionLevel][this.mode];
+    } while (capacity < data_to_encode.length && version < 40);
 
     return version as Version;
   }
