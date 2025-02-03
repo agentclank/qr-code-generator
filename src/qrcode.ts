@@ -15,6 +15,20 @@ type WordCounts = {
   second_group_block_words: number|null
 }
 
+const Modes = {
+  n: {
+    indicator: '0001',
+  },
+  a: {
+    indicator: '0010',
+  },
+  b: {
+    indicator: '0100',
+  },
+  k: {
+    indicator: '1000',
+  }
+}
 const AlignmentPositions: {[key: number]: Array<number>} = {
   1: [],
   2: [6,18],
