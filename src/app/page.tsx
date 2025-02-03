@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react"
 import QRCodeGenerator from '@/qrcode';
 
 type QRCodeProps = {
+  input: string,
   width: string,
   height: string
 }
@@ -19,16 +20,17 @@ function textToBinary(str: string): string {
 
 function QRCode(props: QRCodeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const inputData = props.input;
 
   useEffect(() => {
-    const qrcode = new QRCodeGenerator();
+    const qrcode = new QRCodeGenerator(inputData);
     const canvas = canvasRef.current;
     if (canvas) {
       qrcode.useCanvas(canvas);
-      qrcode.showGrid = true;
+      // qrcode.showGrid = true;
       qrcode.render();
     }
-  }, [canvasRef])
+  }, [canvasRef, inputData]);
 
   return (
     <>
@@ -51,7 +53,7 @@ export default function Home() {
       <Center h="dvh" w="dvw">
         <VStack>
           <Box rounded="md" borderWidth="1px" h={size} w={size} mb="40px">
-            <QRCode width={size} height={size}/>
+            <QRCode width={size} height={size} input={myString}/>
           </Box>
           <Center>
             <Input
