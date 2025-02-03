@@ -803,27 +803,27 @@ export default class QRCodeGenerator {
   }
 
   encode(data_to_encode: any): Array<string> {
-const modeBits = Modes[this.mode].indicator;
+    const modeBits = Modes[this.mode].indicator;
     const countBits = this.countIndicator;
     const total_bits = (WORD_COUNTS[this.version][this.errCorrectionLevel].total_words || 0) * 8;
     if (total_bits == 0) throw new Error('Invalid version or error correction level');
-    
+
     let encoded = [modeBits, countBits];
     switch(this.mode) {
       case 'n':
-console.log("Encoding numeric data")
+        console.log("Encoding numeric data")
         encoded = [...encoded, ...this.encodeNumeric(data_to_encode)];
         break;
       case 'a':
-console.log("Encoding alphanumeric data")
+        console.log("Encoding alphanumeric data")
         encoded = [...encoded, ...this.encodeAlphaNumeric(data_to_encode)];
         break;
       case 'b':
-console.log("Encoding byte data")
+        console.log("Encoding byte data")
         encoded = [...encoded, ...this.encodeByte(data_to_encode)];
         break;
       case 'k':
-console.log("Encoding kanji data")
+        console.log("Encoding kanji data")
         encoded = [...encoded, ...this.encodeKanji(data_to_encode)];
         break;
     }
@@ -845,9 +845,9 @@ console.log("Encoding kanji data")
     for (let i=0;i<remaining_bytes;i++) {
       pad_bytes.push(i%2 ? '00010001' : '11101100');
     }
-encoded.push(terminator, ...pad_bytes);
-    
-//split into 8-bit chunks
+    encoded.push(terminator, ...pad_bytes);
+
+    //split into 8-bit chunks
     let encoded_bytes = encoded.join('').match(/.{1,8}/g);
 
     return encoded;
