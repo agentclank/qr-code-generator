@@ -584,7 +584,7 @@ export default class QRCodeGenerator {
   countIndicator: string = '';
   inputData: any;
   
-  constructor(data_to_encode: any = null) {
+  constructor(data_to_encode: any = '') {
     this.inputData = data_to_encode;
     this.mode = this.determineMode(data_to_encode);
     this.version = this.determineVersion(data_to_encode);
