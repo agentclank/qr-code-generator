@@ -7,12 +7,12 @@ interface Mask { (pos: Coord): boolean; }
 type Mode = 'n'|'a'|'b'|'k'; //numeric, alphanumeric, binary, kanji
 type Version = 1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40;
 type WordCounts = {
-  total_words: number,
-  ec_words_per_block: number,
-  first_group_blocks: number,
-  first_group_block_words: number,
-  second_group_blocks: number,
-  second_group_block_words: number
+  total_words: number|null,
+  ec_words_per_block: number|null,
+  first_group_blocks: number|null,
+  first_group_block_words: number|null,
+  second_group_blocks: number|null,
+  second_group_block_words: number|null
 }
 
 const AlignmentPositions: {[key: number]: Array<number>} = {
@@ -414,31 +414,31 @@ const WORD_COUNTS: {[key: number]: {[key: string]: WordCounts}} = {
       1: { total_words: 589, ec_words_per_block: 24, first_group_blocks: 5, first_group_block_words: 98, second_group_blocks: 1, second_group_block_words: 9 },
       0: { total_words: 453, ec_words_per_block: 28, first_group_blocks: 7, first_group_block_words: 45, second_group_blocks: 3, second_group_block_words: 4 },
       2: { total_words: 325, ec_words_per_block: 24, first_group_blocks: 15, first_group_block_words: 19, second_group_blocks: 2, second_group_block_words: 2 },
-      3: { total_words: 253, ec_words_per_block: 30, first_group_blocks: 3, first_group_block_words: 15, second_group_blocks: 1, second_group_block_words: 	 }
+      3: { total_words: 253, ec_words_per_block: 30, first_group_blocks: 3, first_group_block_words: 15, second_group_blocks: 1, second_group_block_words: null}
   },
   17: {
       1: { total_words: 647, ec_words_per_block: 28, first_group_blocks: 1, first_group_block_words: 107, second_group_blocks: 5, second_group_block_words: 1 },
       0: { total_words: 507, ec_words_per_block: 28, first_group_blocks: 10, first_group_block_words: 46, second_group_blocks: 1, second_group_block_words: 4 },
-      2: { total_words: 367, ec_words_per_block: 28, first_group_blocks: 1, first_group_block_words: 22, second_group_blocks: 1, second_group_block_words: 	 },
-      3: { total_words: 283, ec_words_per_block: 28, first_group_blocks: 2, first_group_block_words: 14, second_group_blocks: 1, second_group_block_words: 	 }
+      2: { total_words: 367, ec_words_per_block: 28, first_group_blocks: 1, first_group_block_words: 22, second_group_blocks: 1, second_group_block_words: null},
+      3: { total_words: 283, ec_words_per_block: 28, first_group_blocks: 2, first_group_block_words: 14, second_group_blocks: 1, second_group_block_words: null}
   },
   18: {
       1: { total_words: 721, ec_words_per_block: 30, first_group_blocks: 5, first_group_block_words: 120, second_group_blocks: 1, second_group_block_words: 1 },
       0: { total_words: 563, ec_words_per_block: 26, first_group_blocks: 9, first_group_block_words: 43, second_group_blocks: 4, second_group_block_words: 4 },
       2: { total_words: 397, ec_words_per_block: 28, first_group_blocks: 17, first_group_block_words: 22, second_group_blocks: 1, second_group_block_words: 2 },
-      3: { total_words: 313, ec_words_per_block: 28, first_group_blocks: 2, first_group_block_words: 14, second_group_blocks: 1, second_group_block_words: 	 }
+      3: { total_words: 313, ec_words_per_block: 28, first_group_blocks: 2, first_group_block_words: 14, second_group_blocks: 1, second_group_block_words: null}
   },
   19: {
       1: { total_words: 795, ec_words_per_block: 28, first_group_blocks: 3, first_group_block_words: 113, second_group_blocks: 4, second_group_block_words: 1 },
-      0: { total_words: 627, ec_words_per_block: 26, first_group_blocks: 3, first_group_block_words: 44, second_group_blocks: 1, second_group_block_words: 	 },
+      0: { total_words: 627, ec_words_per_block: 26, first_group_blocks: 3, first_group_block_words: 44, second_group_blocks: 1, second_group_block_words: null},
       2: { total_words: 445, ec_words_per_block: 26, first_group_blocks: 17, first_group_block_words: 21, second_group_blocks: 4, second_group_block_words: 2 },
-      3: { total_words: 341, ec_words_per_block: 26, first_group_blocks: 9, first_group_block_words: 13, second_group_blocks: 1, second_group_block_words: 	 }
+      3: { total_words: 341, ec_words_per_block: 26, first_group_blocks: 9, first_group_block_words: 13, second_group_blocks: 1, second_group_block_words: null}
   },
   20: {
       1: { total_words: 861, ec_words_per_block: 28, first_group_blocks: 3, first_group_block_words: 107, second_group_blocks: 5, second_group_block_words: 1 },
-      0: { total_words: 669, ec_words_per_block: 26, first_group_blocks: 3, first_group_block_words: 41, second_group_blocks: 1, second_group_block_words: 	 },
+      0: { total_words: 669, ec_words_per_block: 26, first_group_blocks: 3, first_group_block_words: 41, second_group_blocks: 1, second_group_block_words: null},
       2: { total_words: 485, ec_words_per_block: 30, first_group_blocks: 15, first_group_block_words: 24, second_group_blocks: 5, second_group_block_words: 2 },
-      3: { total_words: 385, ec_words_per_block: 28, first_group_blocks: 15, first_group_block_words: 15, second_group_blocks: 1, second_group_block_words: 	 }
+      3: { total_words: 385, ec_words_per_block: 28, first_group_blocks: 15, first_group_block_words: 15, second_group_blocks: 1, second_group_block_words: null}
   },
   21: {
       1: { total_words: 932, ec_words_per_block: 28, first_group_blocks: 4, first_group_block_words: 116, second_group_blocks: 4, second_group_block_words: 1 },
@@ -449,26 +449,26 @@ const WORD_COUNTS: {[key: number]: {[key: string]: WordCounts}} = {
   22: {
       1: { total_words: 1006, ec_words_per_block: 28, first_group_blocks: 2, first_group_block_words: 111, second_group_blocks: 7, second_group_block_words: 1 },
       0: { total_words: 782, ec_words_per_block: 28, first_group_blocks: 17, first_group_block_words: 46, second_group_blocks: 0, second_group_block_words: 0 },
-      2: { total_words: 568, ec_words_per_block: 30, first_group_blocks: 7, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: 	 },
+      2: { total_words: 568, ec_words_per_block: 30, first_group_blocks: 7, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: null},
       3: { total_words: 442, ec_words_per_block: 24, first_group_blocks: 34, first_group_block_words: 13, second_group_blocks: 0, second_group_block_words: 0 }
   },
   23: {
       1: { total_words: 1094, ec_words_per_block: 30, first_group_blocks: 4, first_group_block_words: 121, second_group_blocks: 5, second_group_block_words: 1 },
-      0: { total_words: 860, ec_words_per_block: 28, first_group_blocks: 4, first_group_block_words: 47, second_group_blocks: 1, second_group_block_words: 	 },
-      2: { total_words: 614, ec_words_per_block: 30, first_group_blocks: 11, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: 	 },
-      3: { total_words: 464, ec_words_per_block: 30, first_group_blocks: 16, first_group_block_words: 15, second_group_blocks: 1, second_group_block_words: 	 }
+      0: { total_words: 860, ec_words_per_block: 28, first_group_blocks: 4, first_group_block_words: 47, second_group_blocks: 1, second_group_block_words: null},
+      2: { total_words: 614, ec_words_per_block: 30, first_group_blocks: 11, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: null},
+      3: { total_words: 464, ec_words_per_block: 30, first_group_blocks: 16, first_group_block_words: 15, second_group_blocks: 1, second_group_block_words: null}
   },
   24: {
       1: { total_words: 1174, ec_words_per_block: 30, first_group_blocks: 6, first_group_block_words: 117, second_group_blocks: 4, second_group_block_words: 1 },
-      0: { total_words: 914, ec_words_per_block: 28, first_group_blocks: 6, first_group_block_words: 45, second_group_blocks: 1, second_group_block_words: 	 },
-      2: { total_words: 664, ec_words_per_block: 30, first_group_blocks: 11, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: 	 },
+      0: { total_words: 914, ec_words_per_block: 28, first_group_blocks: 6, first_group_block_words: 45, second_group_blocks: 1, second_group_block_words: null},
+      2: { total_words: 664, ec_words_per_block: 30, first_group_blocks: 11, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: null},
       3: { total_words: 514, ec_words_per_block: 30, first_group_blocks: 30, first_group_block_words: 16, second_group_blocks: 2, second_group_block_words: 1 }
   },
   25: {
       1: { total_words: 1276, ec_words_per_block: 26, first_group_blocks: 8, first_group_block_words: 106, second_group_blocks: 4, second_group_block_words: 1 },
-      0: { total_words: 1000, ec_words_per_block: 28, first_group_blocks: 8, first_group_block_words: 47, second_group_blocks: 1, second_group_block_words: 	 },
-      2: { total_words: 718, ec_words_per_block: 30, first_group_blocks: 7, first_group_block_words: 24, second_group_blocks: 2, second_group_block_words: 	 },
-      3: { total_words: 538, ec_words_per_block: 30, first_group_blocks: 22, first_group_block_words: 15, second_group_blocks: 1, second_group_block_words: 	 }
+      0: { total_words: 1000, ec_words_per_block: 28, first_group_blocks: 8, first_group_block_words: 47, second_group_blocks: 1, second_group_block_words: null},
+      2: { total_words: 718, ec_words_per_block: 30, first_group_blocks: 7, first_group_block_words: 24, second_group_blocks: 2, second_group_block_words: null},
+      3: { total_words: 538, ec_words_per_block: 30, first_group_blocks: 22, first_group_block_words: 15, second_group_blocks: 1, second_group_block_words: null}
   },
   26: {
       1: { total_words: 1370, ec_words_per_block: 28, first_group_blocks: 10, first_group_block_words: 114, second_group_blocks: 2, second_group_block_words: 1 },
@@ -479,86 +479,86 @@ const WORD_COUNTS: {[key: number]: {[key: string]: WordCounts}} = {
   27: {
       1: { total_words: 1468, ec_words_per_block: 30, first_group_blocks: 8, first_group_block_words: 122, second_group_blocks: 4, second_group_block_words: 1 },
       0: { total_words: 1128, ec_words_per_block: 28, first_group_blocks: 22, first_group_block_words: 45, second_group_blocks: 3, second_group_block_words: 4 },
-      2: { total_words: 808, ec_words_per_block: 30, first_group_blocks: 8, first_group_block_words: 23, second_group_blocks: 2, second_group_block_words: 	 },
-      3: { total_words: 628, ec_words_per_block: 30, first_group_blocks: 12, first_group_block_words: 15, second_group_blocks: 2, second_group_block_words: 	 }
+      2: { total_words: 808, ec_words_per_block: 30, first_group_blocks: 8, first_group_block_words: 23, second_group_blocks: 2, second_group_block_words: null},
+      3: { total_words: 628, ec_words_per_block: 30, first_group_blocks: 12, first_group_block_words: 15, second_group_blocks: 2, second_group_block_words: null}
   },
   28: {
-      1: { total_words: 1531, ec_words_per_block: 30, first_group_blocks: 3, first_group_block_words: 117, second_group_blocks: 1, second_group_block_words: 	 },
-      0: { total_words: 1193, ec_words_per_block: 28, first_group_blocks: 3, first_group_block_words: 45, second_group_blocks: 2, second_group_block_words: 	 },
-      2: { total_words: 871, ec_words_per_block: 30, first_group_blocks: 4, first_group_block_words: 24, second_group_blocks: 3, second_group_block_words: 	 },
-      3: { total_words: 661, ec_words_per_block: 30, first_group_blocks: 11, first_group_block_words: 15, second_group_blocks: 3, second_group_block_words: 	 }
+      1: { total_words: 1531, ec_words_per_block: 30, first_group_blocks: 3, first_group_block_words: 117, second_group_blocks: 1, second_group_block_words: null},
+      0: { total_words: 1193, ec_words_per_block: 28, first_group_blocks: 3, first_group_block_words: 45, second_group_blocks: 2, second_group_block_words: null},
+      2: { total_words: 871, ec_words_per_block: 30, first_group_blocks: 4, first_group_block_words: 24, second_group_blocks: 3, second_group_block_words: null},
+      3: { total_words: 661, ec_words_per_block: 30, first_group_blocks: 11, first_group_block_words: 15, second_group_blocks: 3, second_group_block_words: null}
   },
   29: {
       1: { total_words: 1631, ec_words_per_block: 30, first_group_blocks: 7, first_group_block_words: 116, second_group_blocks: 7, second_group_block_words: 1 },
       0: { total_words: 1267, ec_words_per_block: 28, first_group_blocks: 21, first_group_block_words: 45, second_group_blocks: 7, second_group_block_words: 4 },
-      2: { total_words: 911, ec_words_per_block: 30, first_group_blocks: 1, first_group_block_words: 23, second_group_blocks: 3, second_group_block_words: 	 },
-      3: { total_words: 701, ec_words_per_block: 30, first_group_blocks: 19, first_group_block_words: 15, second_group_blocks: 2, second_group_block_words: 	 }
+      2: { total_words: 911, ec_words_per_block: 30, first_group_blocks: 1, first_group_block_words: 23, second_group_blocks: 3, second_group_block_words: null},
+      3: { total_words: 701, ec_words_per_block: 30, first_group_blocks: 19, first_group_block_words: 15, second_group_blocks: 2, second_group_block_words: null}
   },
   30: {
-      1: { total_words: 1735, ec_words_per_block: 30, first_group_blocks: 5, first_group_block_words: 115, second_group_blocks: 1, second_group_block_words: 	 },
-      0: { total_words: 1373, ec_words_per_block: 28, first_group_blocks: 19, first_group_block_words: 47, second_group_blocks: 1, second_group_block_words: 	 },
-      2: { total_words: 985, ec_words_per_block: 30, first_group_blocks: 15, first_group_block_words: 24, second_group_blocks: 2, second_group_block_words: 	 },
-      3: { total_words: 745, ec_words_per_block: 30, first_group_blocks: 23, first_group_block_words: 15, second_group_blocks: 2, second_group_block_words: 	 }
+      1: { total_words: 1735, ec_words_per_block: 30, first_group_blocks: 5, first_group_block_words: 115, second_group_blocks: 1, second_group_block_words: null},
+      0: { total_words: 1373, ec_words_per_block: 28, first_group_blocks: 19, first_group_block_words: 47, second_group_blocks: 1, second_group_block_words: null},
+      2: { total_words: 985, ec_words_per_block: 30, first_group_blocks: 15, first_group_block_words: 24, second_group_blocks: 2, second_group_block_words: null},
+      3: { total_words: 745, ec_words_per_block: 30, first_group_blocks: 23, first_group_block_words: 15, second_group_blocks: 2, second_group_block_words: null}
   },
   31: {
       1: { total_words: 1843, ec_words_per_block: 30, first_group_blocks: 13, first_group_block_words: 115, second_group_blocks: 3, second_group_block_words: 1 },
-      0: { total_words: 1455, ec_words_per_block: 28, first_group_blocks: 2, first_group_block_words: 46, second_group_blocks: 2, second_group_block_words: 	 },
+      0: { total_words: 1455, ec_words_per_block: 28, first_group_blocks: 2, first_group_block_words: 46, second_group_blocks: 2, second_group_block_words: null},
       2: { total_words: 1033, ec_words_per_block: 30, first_group_blocks: 42, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: 2 },
-      3: { total_words: 793, ec_words_per_block: 30, first_group_blocks: 23, first_group_block_words: 15, second_group_blocks: 2, second_group_block_words: 	 }
+      3: { total_words: 793, ec_words_per_block: 30, first_group_blocks: 23, first_group_block_words: 15, second_group_blocks: 2, second_group_block_words: null}
   },
   32: {
       1: { total_words: 1955, ec_words_per_block: 30, first_group_blocks: 17, first_group_block_words: 115, second_group_blocks: 0, second_group_block_words: 0 },
-      0: { total_words: 1541, ec_words_per_block: 28, first_group_blocks: 10, first_group_block_words: 46, second_group_blocks: 2, second_group_block_words: 	 },
-      2: { total_words: 1115, ec_words_per_block: 30, first_group_blocks: 10, first_group_block_words: 24, second_group_blocks: 3, second_group_block_words: 	 },
-      3: { total_words: 845, ec_words_per_block: 30, first_group_blocks: 19, first_group_block_words: 15, second_group_blocks: 3, second_group_block_words: 	 }
+      0: { total_words: 1541, ec_words_per_block: 28, first_group_blocks: 10, first_group_block_words: 46, second_group_blocks: 2, second_group_block_words: null},
+      2: { total_words: 1115, ec_words_per_block: 30, first_group_blocks: 10, first_group_block_words: 24, second_group_blocks: 3, second_group_block_words: null},
+      3: { total_words: 845, ec_words_per_block: 30, first_group_blocks: 19, first_group_block_words: 15, second_group_blocks: 3, second_group_block_words: null}
   },
   33: {
       1: { total_words: 2071, ec_words_per_block: 30, first_group_blocks: 17, first_group_block_words: 115, second_group_blocks: 1, second_group_block_words: 1 },
-      0: { total_words: 1631, ec_words_per_block: 28, first_group_blocks: 14, first_group_block_words: 46, second_group_blocks: 2, second_group_block_words: 	 },
-      2: { total_words: 1171, ec_words_per_block: 30, first_group_blocks: 29, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: 	 },
-      3: { total_words: 901, ec_words_per_block: 30, first_group_blocks: 11, first_group_block_words: 15, second_group_blocks: 4, second_group_block_words: 	 }
+      0: { total_words: 1631, ec_words_per_block: 28, first_group_blocks: 14, first_group_block_words: 46, second_group_blocks: 2, second_group_block_words: null},
+      2: { total_words: 1171, ec_words_per_block: 30, first_group_blocks: 29, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: null},
+      3: { total_words: 901, ec_words_per_block: 30, first_group_blocks: 11, first_group_block_words: 15, second_group_blocks: 4, second_group_block_words: null}
   },
   34: {
       1: { total_words: 2191, ec_words_per_block: 30, first_group_blocks: 13, first_group_block_words: 115, second_group_blocks: 6, second_group_block_words: 1 },
-      0: { total_words: 1725, ec_words_per_block: 28, first_group_blocks: 14, first_group_block_words: 46, second_group_blocks: 2, second_group_block_words: 	 },
+      0: { total_words: 1725, ec_words_per_block: 28, first_group_blocks: 14, first_group_block_words: 46, second_group_blocks: 2, second_group_block_words: null},
       2: { total_words: 1231, ec_words_per_block: 30, first_group_blocks: 44, first_group_block_words: 24, second_group_blocks: 7, second_group_block_words: 2 },
       3: { total_words: 961, ec_words_per_block: 30, first_group_blocks: 59, first_group_block_words: 16, second_group_blocks: 1, second_group_block_words: 1 }
   },
   35: {
       1: { total_words: 2306, ec_words_per_block: 30, first_group_blocks: 12, first_group_block_words: 121, second_group_blocks: 7, second_group_block_words: 1 },
-      0: { total_words: 1812, ec_words_per_block: 28, first_group_blocks: 12, first_group_block_words: 47, second_group_blocks: 2, second_group_block_words: 	 },
-      2: { total_words: 1286, ec_words_per_block: 30, first_group_blocks: 39, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: 	 },
-      3: { total_words: 986, ec_words_per_block: 30, first_group_blocks: 22, first_group_block_words: 15, second_group_blocks: 4, second_group_block_words: 	 }
+      0: { total_words: 1812, ec_words_per_block: 28, first_group_blocks: 12, first_group_block_words: 47, second_group_blocks: 2, second_group_block_words: null},
+      2: { total_words: 1286, ec_words_per_block: 30, first_group_blocks: 39, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: null},
+      3: { total_words: 986, ec_words_per_block: 30, first_group_blocks: 22, first_group_block_words: 15, second_group_blocks: 4, second_group_block_words: null}
   },
   36: {
-      1: { total_words: 2434, ec_words_per_block: 30, first_group_blocks: 6, first_group_block_words: 121, second_group_blocks: 1, second_group_block_words: 	 },
-      0: { total_words: 1914, ec_words_per_block: 28, first_group_blocks: 6, first_group_block_words: 47, second_group_blocks: 3, second_group_block_words: 	 },
-      2: { total_words: 1354, ec_words_per_block: 30, first_group_blocks: 46, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: 	 },
-      3: { total_words: 1054, ec_words_per_block: 30, first_group_blocks: 2, first_group_block_words: 15, second_group_blocks: 6, second_group_block_words: 	 }
+      1: { total_words: 2434, ec_words_per_block: 30, first_group_blocks: 6, first_group_block_words: 121, second_group_blocks: 1, second_group_block_words: null},
+      0: { total_words: 1914, ec_words_per_block: 28, first_group_blocks: 6, first_group_block_words: 47, second_group_blocks: 3, second_group_block_words: null},
+      2: { total_words: 1354, ec_words_per_block: 30, first_group_blocks: 46, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: null},
+      3: { total_words: 1054, ec_words_per_block: 30, first_group_blocks: 2, first_group_block_words: 15, second_group_blocks: 6, second_group_block_words: null}
   },
   37: {
       1: { total_words: 2566, ec_words_per_block: 30, first_group_blocks: 17, first_group_block_words: 122, second_group_blocks: 4, second_group_block_words: 1 },
-      0: { total_words: 1992, ec_words_per_block: 28, first_group_blocks: 29, first_group_block_words: 46, second_group_blocks: 1, second_group_block_words: 	 },
-      2: { total_words: 1426, ec_words_per_block: 30, first_group_blocks: 49, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: 	 },
-      3: { total_words: 1096, ec_words_per_block: 30, first_group_blocks: 24, first_group_block_words: 15, second_group_blocks: 4, second_group_block_words: 	 }
+      0: { total_words: 1992, ec_words_per_block: 28, first_group_blocks: 29, first_group_block_words: 46, second_group_blocks: 1, second_group_block_words: null},
+      2: { total_words: 1426, ec_words_per_block: 30, first_group_blocks: 49, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: null},
+      3: { total_words: 1096, ec_words_per_block: 30, first_group_blocks: 24, first_group_block_words: 15, second_group_blocks: 4, second_group_block_words: null}
   },
   38: {
-      1: { total_words: 2702, ec_words_per_block: 30, first_group_blocks: 4, first_group_block_words: 122, second_group_blocks: 1, second_group_block_words: 	 },
-      0: { total_words: 2102, ec_words_per_block: 28, first_group_blocks: 13, first_group_block_words: 46, second_group_blocks: 3, second_group_block_words: 	 },
-      2: { total_words: 1502, ec_words_per_block: 30, first_group_blocks: 48, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: 	 },
-      3: { total_words: 1142, ec_words_per_block: 30, first_group_blocks: 42, first_group_block_words: 15, second_group_blocks: 3, second_group_block_words: 	 }
+      1: { total_words: 2702, ec_words_per_block: 30, first_group_blocks: 4, first_group_block_words: 122, second_group_blocks: 1, second_group_block_words: null},
+      0: { total_words: 2102, ec_words_per_block: 28, first_group_blocks: 13, first_group_block_words: 46, second_group_blocks: 3, second_group_block_words: null},
+      2: { total_words: 1502, ec_words_per_block: 30, first_group_blocks: 48, first_group_block_words: 24, second_group_blocks: 1, second_group_block_words: null},
+      3: { total_words: 1142, ec_words_per_block: 30, first_group_blocks: 42, first_group_block_words: 15, second_group_blocks: 3, second_group_block_words: null}
   },
   39: {
       1: { total_words: 2812, ec_words_per_block: 30, first_group_blocks: 20, first_group_block_words: 117, second_group_blocks: 4, second_group_block_words: 1 },
       0: { total_words: 2216, ec_words_per_block: 28, first_group_blocks: 40, first_group_block_words: 47, second_group_blocks: 7, second_group_block_words: 4 },
-      2: { total_words: 1582, ec_words_per_block: 30, first_group_blocks: 43, first_group_block_words: 24, second_group_blocks: 2, second_group_block_words: 	 },
-      3: { total_words: 1222, ec_words_per_block: 30, first_group_blocks: 10, first_group_block_words: 15, second_group_blocks: 6, second_group_block_words: 	 }
+      2: { total_words: 1582, ec_words_per_block: 30, first_group_blocks: 43, first_group_block_words: 24, second_group_blocks: 2, second_group_block_words: null},
+      3: { total_words: 1222, ec_words_per_block: 30, first_group_blocks: 10, first_group_block_words: 15, second_group_blocks: 6, second_group_block_words: null}
   },
   40: {
       1: { total_words: 2956, ec_words_per_block: 30, first_group_blocks: 19, first_group_block_words: 118, second_group_blocks: 6, second_group_block_words: 1 },
-      0: { total_words: 2334, ec_words_per_block: 28, first_group_blocks: 18, first_group_block_words: 47, second_group_blocks: 3, second_group_block_words: 	 },
-      2: { total_words: 1666, ec_words_per_block: 30, first_group_blocks: 34, first_group_block_words: 24, second_group_blocks: 3, second_group_block_words: 	 },
-      3: { total_words: 1276, ec_words_per_block: 30, first_group_blocks: 20, first_group_block_words: 15, second_group_blocks: 6, second_group_block_words: 	 }
+      0: { total_words: 2334, ec_words_per_block: 28, first_group_blocks: 18, first_group_block_words: 47, second_group_blocks: 3, second_group_block_words: null},
+      2: { total_words: 1666, ec_words_per_block: 30, first_group_blocks: 34, first_group_block_words: 24, second_group_blocks: 3, second_group_block_words: null},
+      3: { total_words: 1276, ec_words_per_block: 30, first_group_blocks: 20, first_group_block_words: 15, second_group_blocks: 6, second_group_block_words: null}
   }
 };
 
