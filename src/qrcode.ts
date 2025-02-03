@@ -803,24 +803,54 @@ export default class QRCodeGenerator {
   }
 
   encode(data_to_encode: any): Array<string> {
-    let encoded = [];
+const modeBits = Modes[this.mode].indicator;
+    const countBits = this.countIndicator;
+    const total_bits = (WORD_COUNTS[this.version][this.errCorrectionLevel].total_words || 0) * 8;
+    if (total_bits == 0) throw new Error('Invalid version or error correction level');
+    
+    let encoded = [modeBits, countBits];
     switch(this.mode) {
       case 'n':
-        encoded = this.encodeNumeric(data_to_encode);
+console.log("Encoding numeric data")
+        encoded = [...encoded, ...this.encodeNumeric(data_to_encode)];
         break;
       case 'a':
-        encoded = this.encodeAlphaNumeric(data_to_encode);
+console.log("Encoding alphanumeric data")
+        encoded = [...encoded, ...this.encodeAlphaNumeric(data_to_encode)];
         break;
       case 'b':
-        encoded = this.encodeByte(data_to_encode);
+console.log("Encoding byte data")
+        encoded = [...encoded, ...this.encodeByte(data_to_encode)];
         break;
       case 'k':
-        encoded = this.encodeKanji(data_to_encode);
+console.log("Encoding kanji data")
+        encoded = [...encoded, ...this.encodeKanji(data_to_encode)];
         break;
     }
 
-    return encoded;
+    let bit_string = encoded.join('');
+    let terminator = '';
+    //add up to 4 terminator bits
+    for (let i=0;i<4 && (bit_string+terminator).length < total_bits;i++) {
+      terminator += '0';
+    }
+
+    //make sure bit string is a multiple of 8
+    while ((bit_string+terminator).length % 8 !== 0) {
+      terminator += '0';
+    }
+
+    let remaining_bytes = (total_bits - (bit_string+terminator).length) / 8;
+    let pad_bytes = [];
+    for (let i=0;i<remaining_bytes;i++) {
+      pad_bytes.push(i%2 ? '00010001' : '11101100');
+    }
+encoded.push(terminator, ...pad_bytes);
     
+//split into 8-bit chunks
+    let encoded_bytes = encoded.join('').match(/.{1,8}/g);
+
+    return encoded;
   }
 
   encodeNumeric(data_to_encode: string): Array<string> {
