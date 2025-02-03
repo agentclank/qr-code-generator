@@ -592,7 +592,7 @@ export default class QRCodeGenerator {
   showGrid: boolean = false;
   curPos: Coord = [0,0];
   matrix: BitMatrix = [[]];
-  errCorrectionLevel: ErrorCorrectionLevel = ERR_LVLS.HIGH
+  errCorrectionLevel: ErrorCorrectionLevel = ERR_LVLS.QUAL
   functionalMatrix: BitMatrix;
   maskPattern: number = 0;
   countIndicator: string = '';
