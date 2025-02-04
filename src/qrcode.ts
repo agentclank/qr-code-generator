@@ -952,7 +952,6 @@ export default class QRCodeGenerator {
     for (let i=0;i<steps;i++) {
       remainder = addPolys(remainder, multiplyPolys(generator, [[remainder[0][0], remainder[0][1] - generator[0][1]]]));
     }
-    stringifyPoly(remainder);
 
     return remainder.map(term => {
       return decToBin(GFLogs[term[0]]).padStart(8, '0');
