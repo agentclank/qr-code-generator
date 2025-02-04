@@ -1,18 +1,20 @@
 import { format } from "path";
 
 type Coord = [number, number];
+type PolyTerm = [number, number];
+type Polynomial = Array<PolyTerm>
 type BitMatrix = Array<Array<0|1|null|undefined>>;
 type ErrorCorrectionLevel = 0|1|2|3;
 interface Mask { (pos: Coord): boolean; }
 type Mode = 'n'|'a'|'b'|'k'; //numeric, alphanumeric, binary, kanji
 type Version = 1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|32|33|34|35|36|37|38|39|40;
 type WordCounts = {
-  total_words: number|null,
-  ec_words_per_block: number|null,
-  first_group_blocks: number|null,
-  first_group_block_words: number|null,
-  second_group_blocks: number|null,
-  second_group_block_words: number|null
+  total_words: number,
+  ec_words_per_block: number,
+  first_group_blocks: number,
+  first_group_block_words: number,
+  second_group_blocks: number,
+  second_group_block_words: number
 }
 
 const Modes = {
@@ -576,8 +578,56 @@ const WORD_COUNTS: { [key: number]: { [key: string]: WordCounts } } = {
   }
 };
 
+const { GFLogs, GFAntilogs } = (() => {
+  let GFLogs = [1];
+  while (GFLogs.length < 256) {
+      const last = GFLogs[GFLogs.length - 1];
+      let val = last * 2;
+      GFLogs.push(val > 255 ? val ^ 0x11d : val);
+  }
+  let GFAntilogs = GFLogs.map((_, i) => GFLogs.indexOf(i));
+
+  return { GFLogs, GFAntilogs };
+})();
+
+function stringifyPoly(poly: Polynomial, alpha: boolean = true): String {
+  if (!alpha) return poly.map(term => `${GFLogs[term[0]]}x^${term[1]}`).join(' + ');
+  return poly.map(term => `a^${term[0]}x^${term[1]}`).join(' + ');
+}
+
 function decToBin(dec: number): string {
   return (dec >>> 0).toString(2);
+}
+
+function multiplyTerms(p: PolyTerm, q: PolyTerm): PolyTerm {
+  return ([(p[0] + q[0]) % 255, (p[1] + q[1]) % 255])
+}
+
+function simplifyPoly(terms: Polynomial): Polynomial {
+  const sorted_terms = terms.sort((a, b) => b[1] - a[1]);
+  return sorted_terms
+    .reduce((poly: Polynomial, term: PolyTerm) => {
+      if (poly.length == 0 || poly[poly.length - 1][1] != term[1]) return [...poly, term];
+      const last_term = poly.pop();
+      if (last_term == undefined) return poly;
+      let coeff = GFLogs[last_term[0]] ^ GFLogs[term[0]];
+      if (coeff == 0) return poly;
+      return [...poly, [GFAntilogs[coeff], last_term[1]]] as Polynomial;
+    }, [] as Polynomial)
+}
+
+function multiplyPolys(p: Polynomial, q: Polynomial): Polynomial {
+  let poly: Polynomial = [];
+  for (let i = 0; i < p.length; i++) {
+    for (let k = 0; k < q.length; k++) {
+      poly.push(multiplyTerms(p[i], q[k]));
+    }
+  }
+  return simplifyPoly(poly);
+}
+
+function addPolys(p: Polynomial, q: Polynomial): Polynomial {
+  return simplifyPoly([...p, ...q]);
 }
 
 export default class QRCodeGenerator {
@@ -592,7 +642,7 @@ export default class QRCodeGenerator {
   showGrid: boolean = false;
   curPos: Coord = [0,0];
   matrix: BitMatrix = [[]];
-  errCorrectionLevel: ErrorCorrectionLevel = ERR_LVLS.QUAL
+  errCorrectionLevel: ErrorCorrectionLevel = ERR_LVLS.MED
   functionalMatrix: BitMatrix;
   maskPattern: number = 0;
   countIndicator: string = '';
@@ -811,19 +861,15 @@ export default class QRCodeGenerator {
     let encoded = [modeBits, countBits];
     switch(this.mode) {
       case 'n':
-        console.log("Encoding numeric data")
         encoded = [...encoded, ...this.encodeNumeric(data_to_encode)];
         break;
       case 'a':
-        console.log("Encoding alphanumeric data")
         encoded = [...encoded, ...this.encodeAlphaNumeric(data_to_encode)];
         break;
       case 'b':
-        console.log("Encoding byte data")
         encoded = [...encoded, ...this.encodeByte(data_to_encode)];
         break;
       case 'k':
-        console.log("Encoding kanji data")
         encoded = [...encoded, ...this.encodeKanji(data_to_encode)];
         break;
     }
@@ -848,9 +894,89 @@ export default class QRCodeGenerator {
     encoded.push(terminator, ...pad_bytes);
 
     //split into 8-bit chunks
-    let encoded_bytes = encoded.join('').match(/.{1,8}/g);
+    let encoded_bytes = (encoded.join('').match(/.{1,8}/g) || []) as Array<string>;
+
+    encoded_bytes = this.generateErrorCorrectionData(encoded_bytes)
 
     return encoded;
+  }
+
+  generateErrorCorrectionData(data: Array<string>): Array<string> {
+    let encoded_with_ec = [] as Array<string>;
+    const word_counts = WORD_COUNTS[this.version][this.errCorrectionLevel];
+    if (!word_counts) throw new Error('Invalid version or error correction level');
+
+    let group1 = [] as Array<Array<string>>;
+    let group2 = [] as Array<Array<string>>;
+    for (let i=0;i<word_counts.first_group_blocks;i++) {
+      group1.push(data.splice(0, word_counts.first_group_block_words));
+    }
+
+    for (let i=0;i<word_counts.second_group_blocks;i++) {
+      group2.push(data.splice(0, word_counts.second_group_block_words));
+    }
+
+    const group1ec = group1.map((block) => this.generateErrorCorrectionCodewords(block, word_counts.ec_words_per_block))
+    const group2ec = group2.map((block) => this.generateErrorCorrectionCodewords(block, word_counts.ec_words_per_block))
+
+    //interleave the msg codewords
+    let msg_blocks = [...group1, ...group2];
+    let max_block_words = Math.max(word_counts.first_group_block_words, word_counts.second_group_block_words);
+    for (let i=0;i<max_block_words;i++) {
+      for (let k=0;k<msg_blocks.length;k++) {
+        if (msg_blocks[k][i]) encoded_with_ec.push(msg_blocks[k][i]);
+      }
+    }
+
+    //interleave the ec codewords
+    let ec_blocks = [...group1ec, ...group2ec];
+    let max_block_ec = Math.max(word_counts.ec_words_per_block);
+    for (let i=0;i<max_block_ec;i++) {
+      for (let k=0;k<ec_blocks.length;k++) {
+        if (ec_blocks[k][i]) encoded_with_ec.push(ec_blocks[k][i]);
+      }
+    }
+
+    return encoded_with_ec;
+  }
+
+  generateErrorCorrectionCodewords(data: Array<string>, len: number): Array<string> {
+    let msg_poly = this.dataToPolynomial(data);
+    let generator = this.getGeneratorPolynomial(len);
+
+    //to make sure lead term is large enough, multiply by x^(degree of generator)
+    msg_poly = multiplyPolys(msg_poly, [[0, len]]);
+
+    let remainder = msg_poly;
+    let steps = msg_poly.length;
+    for (let i=0;i<steps;i++) {
+      remainder = addPolys(remainder, multiplyPolys(generator, [[remainder[0][0], remainder[0][1] - generator[0][1]]]));
+    }
+    stringifyPoly(remainder);
+
+    return remainder.map(term => {
+      return decToBin(GFLogs[term[0]]).padStart(8, '0');
+    })
+  }
+
+  dataToPolynomial(data: Array<string>): Polynomial {
+    let poly = [] as Polynomial;
+    for (let i=0; i<data.length;i++) {
+      let term = [ GFAntilogs[parseInt(data[i], 2)], data.length - 1 - i ] as PolyTerm;
+      poly.push(term);
+    }
+
+    return poly;
+  }
+
+  getGeneratorPolynomial(codewords: number): Polynomial {
+    let generator: Polynomial = [[0, 1], [0, 0]];
+
+    for (let i=1; i < codewords; i++) {
+        generator = multiplyPolys(generator, [[0, 1], [i, 0]]);
+    }
+
+    return generator;
   }
 
   encodeNumeric(data_to_encode: string): Array<string> {
