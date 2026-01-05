@@ -631,7 +631,7 @@ function addPolys(p: Polynomial, q: Polynomial): Polynomial {
 }
 
 export default class QRCodeGenerator {
-  bytes: Uint8Array = new Uint8Array();
+  bytes: Array<string> = [];
   message: Uint8Array = new Uint8Array();
   canvas?: HTMLCanvasElement;
   canvasCtx?: CanvasRenderingContext2D;
@@ -644,38 +644,61 @@ export default class QRCodeGenerator {
   matrix: BitMatrix = [[]];
   errCorrectionLevel: ErrorCorrectionLevel = ERR_LVLS.MED
   functionalMatrix: BitMatrix;
+  dataMatrix: BitMatrix;
   maskPattern: number = 0;
   countIndicator: string = '';
   inputData: any;
+  padding: number = 4;
+  formatString: string = '';
   
-  constructor(data_to_encode: any = '') {
+  constructor(data_to_encode: any = '', canvas?: HTMLCanvasElement, err_correction_level: ErrorCorrectionLevel = ERR_LVLS.MED) {
+    // Setup
     this.inputData = data_to_encode;
     this.mode = this.determineMode(data_to_encode);
     this.version = this.determineVersion(data_to_encode);
     this.countIndicator = this.generateCountIndicator();
     this.resetMatrix();
+    this.useCanvas(canvas as HTMLCanvasElement);
+    
+    // Set fixed patterns (Finders, Timing, Alignment)
     this.setFunctionPatterns();
-    this.functionalMatrix = this.matrix;
+    this.functionalMatrix = this.matrix.map(row => [...row]);
+    
+    // Encode data and place into matrix
     this.bytes = this.encode(data_to_encode);
+    this.dataMatrix = this.drawData(this.bytes);
+
+    // Score mask patterns to determine best one
     // this.determineMaskPattern();
-    //TODO encode data to matrix
-    //TODO score mask patterns to determine best one
-    //TODO add version and format data
-    // this.applyMask();
+    this.maskPattern = 0; //for simplicity, using mask pattern 0 only
+    
+    //generate format string and apply to matrix
+    this.formatString = this.generateFormatString(this.maskPattern);
+    console.log('Format String:', this.formatString);
+    this.setFormatInfo(this.functionalMatrix, this.formatString);
+    
+    //apply the mask to the data matrix
+    this.applyMask();
+
+    this.matrix = this.mergeMatrices();
   }
 
   get gridSize(): number {
     return (((this.version - 1) * 4) + 21);
   }
 
-  resetMatrix() {
+  emptyMatrix(): BitMatrix {
     let arr: BitMatrix = [[]];
     for(let i=0;i<this.gridSize;i++) {
       arr[i] = [];
       for(let k=0;k<this.gridSize;k++) arr[i][k] = null;
     }
 
-    this.matrix = arr;
+    return arr;
+  }
+
+  resetMatrix() {
+    this.matrix = this.emptyMatrix();
   }
 
   generateCountIndicator() {
@@ -705,10 +728,9 @@ export default class QRCodeGenerator {
     throw new Error('Invalid mode or version');
   }
 
-  generateFormatString() {
-    //TODO: convert this to actual binary operations instead of string manipulation
+  generateFormatString(mask_pattern: number = this.maskPattern): string {
     let errLevel = this.errCorrectionLevel.toString(2).padStart(2, '0'); //convert error correction level to 2-bit binary
-    let maskPattern = this.maskPattern.toString(2).padStart(3, '0'); //convert mask pattern to 3-bit binary
+    let maskPattern = mask_pattern.toString(2).padStart(3, '0'); //convert mask pattern to 3-bit binary
     let formatString = errLevel + maskPattern; //concatenate error correction level and mask pattern
     const generator = '10100110111'; //generator polynomial for error correction x^10 + x^8 + x^5 + x^4 + x^2 + x^1 + x^0 
 
@@ -718,8 +740,8 @@ export default class QRCodeGenerator {
     return format;
   }
 
-  setFormatInfo() {
-    let formatString = this.generateFormatString();
+  setFormatInfo(matrix: BitMatrix, formatString?: string) {
+    if (!formatString) formatString = '000000000000000'; //default placeholder until mask pattern is determined
     let formatPositions: Array<Array<Coord>> = [
       [
         [0,8],
@@ -757,25 +779,136 @@ export default class QRCodeGenerator {
     ];
 
     for (let i=0;i<formatString.length;i++) {
-      this.setCell(formatPositions[0][i], parseInt(formatString[i]) as 0|1);
-      this.setCell(formatPositions[1][i], parseInt(formatString[i]) as 0|1);
+      matrix[formatPositions[0][i][0]][formatPositions[0][i][1]] = parseInt(formatString[i]) as 0|1;
+      matrix[formatPositions[1][i][0]][formatPositions[1][i][1]] = parseInt(formatString[i]) as 0|1;
     }
   }
 
   setFunctionPatterns() {
-    this.setLocators();
+    this.setFinders();
     this.setSeparators();
     this.setAlignmentSquares();
     this.setTimingPatterns();
     this.setDarkModule();
-    this.setFormatInfo();
 
     if (this.version >= 7) this.setVersionModules();
   }
 
   determineMaskPattern() {
-    //score and apply best one
-    this.maskPattern = 0;
+    //loop through all the mask patterns
+    let bestScore = Infinity;
+    let bestPattern = 0;
+    // for each entry in MaskPatterns
+    for (let pattern in MaskPatterns) {
+      //apply mask pattern to data matrix to create test matrix
+      let testMatrix = this.dataMatrix.map((row, i) => row.map((cell, k) => {
+        let pos: Coord = [i,k];
+        if (this.functionalMatrix[i][k] !== null) return this.functionalMatrix[i][k];
+        //xor cell value with mask pattern
+        let val: 0|1 = cell ? 1 : 0;
+        if (MaskPatterns[parseInt(pattern)](pos)) val = !val ? 1 : 0;
+        return val;
+      }));
+
+      //generate format string based on current mask pattern
+      let formatString = this.generateFormatString(parseInt(pattern));
+
+      //set format info in test matrix
+      this.setFormatInfo(testMatrix, formatString);
+
+      //score it
+      let score = this.scoreMatrix(testMatrix);
+      if (score < bestScore) {
+        bestScore = score;
+        bestPattern = parseInt(pattern);
+      }
+    }
+    this.maskPattern = bestPattern;
+  }
+
+  scoreMatrix(matrix: BitMatrix): number {
+    let score = 0;
+
+    /**
+     * Rule 1
+     * Lines of same color with length >= 5
+     * For each found: 3 points for first 5 cells in the line + 1 point for each additional cell
+     */
+
+    const scoreLines = (line: Array<0|1>) => {
+      let lineLengths: Array<number> = [];
+      let count = 1;
+      for(let i=0;i<line.length-1;i++) {
+        if (line[i+1] === line[i]) {
+          count++;
+        } else {
+          if (count >= 5) lineLengths.push(count);
+          count = 1;
+        }
+      }
+      if (count >= 5) lineLengths.push(count);
+
+      return lineLengths.reduce((acc, len) => acc + 3 + (len - 5), 0);
+    }
+
+    //should have no empty modules at this point so cast to 0|1, Ill probably regret this assumption later
+    let rows_and_columns: Array<Array<0|1>> = [...matrix, ...matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]))] as Array<Array<0|1>>;
+    score += rows_and_columns.reduce((acc, line) => acc + scoreLines(line), 0);
+
+    /**
+     * Rule 2
+     * 2x2 blocks of same color, overlapping blocks count separately
+     * For each found: 3 points
+     */
+
+    for (let i=0;i<matrix.length-1;i++) {
+      for (let k=0;k<matrix[i].length-1;k++) {
+        let cell = matrix[i][k];
+        if ( cell === matrix[i][k+1]   //right
+          && cell === matrix[i+1][k]   //down
+          && cell === matrix[i+1][k+1] //diagonal
+        ) {
+          //found a 2x2 block
+          score += 3;
+        }
+      }
+    }
+
+    /**
+     * Rule 3
+     * Finder-like patterns in rows or columns
+     * For each found: 40 points
+     */
+
+    const scoreFinders = (line: Array<0|1>): number => {
+      //check for pattern 10111010000 or 00001011101 (reversed)
+      const paddedLine = [0,0,0,0,...line,0,0,0,0];
+      const pattern1 = [1,0,1,1,1,0,1,0,0,0,0];
+      const pattern2 = [0,0,0,0,1,0,1,1,1,0,1];
+      let score = 0;
+
+      for(let i=0;i<paddedLine.length - 10;i++) {
+        let segment = paddedLine.slice(i, i + 11);
+        if (segment.every((val, idx) => val === pattern1[idx]) || segment.every((val, idx) => val === pattern2[idx])) {
+          score += 40;
+        }
+      }
+      return score;
+    }
+
+    score += rows_and_columns.reduce((acc, line) => acc + scoreFinders(line), 0);
+
+    /**
+     * Rule 4
+     * Proportion of dark cells in entire matrix
+     * Find closest multiple of 5% to 50%
+     * For each 5% difference from 50%: 10 points
+     */
+    let darkCells = matrix.reduce((acc: number, row) => acc + row.reduce((rowAcc: number, cell) => rowAcc + (cell ?? 0), 0), 0);
+    let totalCells = this.gridSize * this.gridSize;
+    score += Math.floor(Math.abs(((darkCells / totalCells) * 100) - 50) / 5) * 10;
+
+    return score;
   }
 
   applyMask() {
@@ -784,12 +917,26 @@ export default class QRCodeGenerator {
       for (let k=0;k<this.gridSize;k++) {
         let pos: Coord = [i,k];
         if (this.functionalMatrix[i][k] === null) {
-          let val: 0|1 = this.getCell(pos) ? 1 : 0;
+          let val: 0|1 = this.dataMatrix[i][k] ? 1 : 0;
           if (mask(pos)) val = !val ? 1 : 0;
-          this.setCell(pos, val);
+          this.dataMatrix[i][k] = val;
         }
       }
     }
+  }
+
+  mergeMatrices(): BitMatrix {
+    let finalMatrix: BitMatrix = this.emptyMatrix();
+    for (let i=0;i<this.gridSize;i++) {
+      for (let k=0;k<this.gridSize;k++) {
+        if (this.functionalMatrix[i][k] !== null) {
+          finalMatrix[i][k] = this.functionalMatrix[i][k];
+        } else {
+          finalMatrix[i][k] = this.dataMatrix[i][k];
+        }
+      }
+    }
+    return finalMatrix;
   }
 
   determineMode(data_to_encode: any): Mode {
@@ -848,7 +995,7 @@ export default class QRCodeGenerator {
     this.canvasCtx = canvas.getContext('2d') || undefined;
     if (this.canvas && this.canvasCtx) {
       this.canvasSize = this.canvasCtx.canvas.width <= this.canvasCtx.canvas.height ? this.canvasCtx.canvas.width : this.canvasCtx.canvas.height
-      this.cellSize = this.canvasSize / this.gridSize;
+      this.cellSize = this.canvasSize / (this.gridSize + (this.padding * 2));
     }
   }
 
@@ -898,7 +1045,7 @@ export default class QRCodeGenerator {
 
     encoded_bytes = this.generateErrorCorrectionData(encoded_bytes)
 
-    return encoded;
+    return encoded_bytes;
   }
 
   generateErrorCorrectionData(data: Array<string>): Array<string> {
@@ -1027,6 +1174,33 @@ export default class QRCodeGenerator {
     return [];
   }
 
+  drawData(bytes: Array<string>): BitMatrix {
+    let bits = bytes.join('').split('').map(bit => parseInt(bit) as 0|1);
+    let bitCursor = 0;
+    const nextBit = () => bits[bitCursor++] ?? 0;
+    const matrix = this.emptyMatrix();
+
+    //Outer loop, two cols at a time, right to left, skip the timing pattern col
+    let direction = -1; //-1 = up, 1 = down
+    for(let col = this.gridSize - 1; col > 0; col -= 2) {
+      if (col == 6) col--; //skip vertical timing pattern
+
+      let startRow = direction == -1 ? this.gridSize - 1 : 0;
+      for(let rowOffset = 0; rowOffset < this.gridSize; rowOffset++) {
+        let row = startRow + (rowOffset * direction);
+        if (this.functionalMatrix[col][row] === null) {
+          matrix[col][row] = nextBit();
+        }
+        if (this.functionalMatrix[col-1][row] === null) {
+          matrix[col-1][row] = nextBit();
+        }
+      }
+
+      direction *= -1;
+    }
+
+    return matrix;
+  }
 
   encodeMessage() {
     let encoded = new Uint8Array();
@@ -1037,11 +1211,12 @@ export default class QRCodeGenerator {
 
   render() {
     if (!this.canvasCtx) return;
-    this.canvasCtx.fillStyle = '#ffffff';
+    this.canvasCtx.fillStyle = '#fff';
     this.canvasCtx.fillRect(0,0,this.canvasCtx.canvas.width, this.canvasCtx.canvas.height);
-    for(let i=0;i<this.matrix.length;i++) {
-      for(let k=0;k<this.matrix[i].length;k++) {
-        this.drawCell([i, k], this.matrix[i][k] as 0|1|null);
+    let renderMatrix = this.matrix;
+    for(let i=0;i<renderMatrix.length;i++) {
+      for(let k=0;k<renderMatrix[i].length;k++) {
+        this.drawCell([i, k], renderMatrix[i][k] as 0|1|null);
       }
     }
     if (this.showGrid) this.drawGrid();
@@ -1065,42 +1240,12 @@ export default class QRCodeGenerator {
     }
   }
 
-  nextPos() {
-    let v: 1|0|-1 = 1; //vertical movement
-    let h: 1|-1 = 1 //are we going left or right 1=right -1=left
-    switch (this.curPos[0] % 4) {
-      case 0: //we're on the right going up
-        v = 0;
-        h = -1;
-        break;
-      case 1: //we're on the left going down
-        v = 0;
-        h = 1;
-        break;
-      case 2: //we're on the right going down
-        v = 1;
-        h = -1;
-        break;
-      case 3: //we're on the left going up
-        v = -1;
-        h = 1;
-        break;
-    }
-
-    let nextPos: Coord = [this.curPos[0] + h, this.curPos[1] + v];
-
-    //TODO check if nextPos collides with functional cell, and if so, do we go around or skip past
-    //TODO check if we need to turn around
-
-    this.curPos = nextPos;
-  }
-
   //draw a grid of lines on the canvas to make it easier to see where the squares are
   drawGrid() {
     if (!this.canvasCtx) throw new Error('No canvas set');
     this.canvasCtx.lineWidth = 1;
     this.canvasCtx.strokeStyle = "red";
-    for (let i = 0; i <= this.gridSize;i++) {
+    for (let i = 0; i <= this.gridSize + (this.padding * 2);i++) {
       let pos = i * this.cellSize;
       this.canvasCtx.moveTo(pos, 0);
       this.canvasCtx.lineTo(pos, this.canvasCtx.canvas.height)
@@ -1112,7 +1257,7 @@ export default class QRCodeGenerator {
     }
   }
 
-  setLocators() {
+  setFinders() {
     const locatorPositions: Array<Coord> = [
       [0,0],
       [0,this.gridSize-7],
@@ -1181,18 +1326,19 @@ export default class QRCodeGenerator {
     }
   }
 
-  drawCell(pos: Coord, val: 0|1|null = 1) {
+  drawCell(pos: Coord, val: 0|1|null = 1, colorOverride: string | null = null) {
     if (!this.canvasCtx) throw new Error('No canvas set');
     const [x, y] = pos;
     let [l, t] = this.coordsToPos(x, y);
     let color = '#0000ff';
     if (val == 1) color = '#000000'
     if (val == 0) color = '#ffffff'
+    if (colorOverride !== null) color = colorOverride;
     this.canvasCtx.fillStyle = color;
     this.canvasCtx.fillRect(l, t, this.cellSize, this.cellSize);
   }
 
   coordsToPos(x: number, y: number): Array<number> {
-    return [this.cellSize * (x), this.cellSize * (y)]
+    return [this.cellSize * (x + this.padding), this.cellSize * (y + this.padding)]
   }
 }

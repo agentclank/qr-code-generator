@@ -21,27 +21,29 @@ function textToBinary(str: string): string {
 function QRCode(props: QRCodeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const inputData = props.input;
+  const formatString = useRef<string>('');
 
   useEffect(() => {
-    const qrcode = new QRCodeGenerator(inputData);
     const canvas = canvasRef.current;
+    const qrcode = new QRCodeGenerator(inputData, canvas);
     if (canvas) {
-      qrcode.useCanvas(canvas);
       // qrcode.showGrid = true;
       qrcode.render();
+      formatString.current = qrcode.formatString;
     }
   }, [canvasRef, inputData]);
 
   return (
     <>
       <canvas ref={canvasRef} {...props}></canvas>
+      <span>{formatString.current}</span>
     </>
   )
 }
 
 export default function Home() {
 
-  const [myString, setMyString] = useState('hello');
+  const [myString, setMyString] = useState('HELLO WORLD');
   const size = "400px"
 
   function handleInput(event: FormEvent<HTMLInputElement>): void {
