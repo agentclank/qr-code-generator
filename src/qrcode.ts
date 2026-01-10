@@ -640,6 +640,7 @@ export default class QRCodeGenerator {
   mode: Mode = 'a';
   cellSize: number = 0;
   showGrid: boolean = false;
+  highlight: boolean = false;
   curPos: Coord = [0,0];
   matrix: BitMatrix = [[]];
   errCorrectionLevel: ErrorCorrectionLevel = ERR_LVLS.MED
@@ -1217,7 +1218,32 @@ export default class QRCodeGenerator {
     let renderMatrix = this.matrix;
     for(let i=0;i<renderMatrix.length;i++) {
       for(let k=0;k<renderMatrix[i].length;k++) {
-        this.drawCell([i, k], renderMatrix[i][k] as 0|1|null);
+        if (this.highlight) {
+          //green for data modules
+          let dataLight = '#00ff00';
+          let dataDark = '#007f00';
+          //blue for function modules
+          let funcLight = '#0000ff';
+          let funcDark = '#00007f';
+          //red for overlapping and gray for empty modules
+          let overlapLight = '#ff0000';
+          let emptyDark = '#7f7f7f';
+          let color = emptyDark;
+
+          if (this.dataMatrix[i][k] !== null && this.functionalMatrix[i][k] !== null) {
+            color = overlapLight;
+          } else if (this.dataMatrix[i][k] !== null) {
+            color = renderMatrix[i][k] === 1 ? dataDark : dataLight;
+          } else if (this.functionalMatrix[i][k] !== null) {
+            color = renderMatrix[i][k] === 1 ? funcDark : funcLight;
+          } else {
+            color = emptyDark;
+          }
+          
+          this.drawCell([i, k], renderMatrix[i][k] as 0|1|null, color);
+        } else {
+          this.drawCell([i, k], renderMatrix[i][k] as 0|1|null);
+        }
       }
     }
     if (this.showGrid) this.drawGrid();
