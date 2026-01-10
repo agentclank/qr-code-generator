@@ -9,15 +9,6 @@ type QRCodeProps = {
   height: string
 }
 
-function textToBinary(str: string): string {
-  let output = '';
-  for(var i = 0; i < str.length; i++) {
-    output += str[i].charCodeAt(0).toString(2);
-  }
-
-  return output;
-}
-
 function QRCode(props: QRCodeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const inputData = props.input;
@@ -28,6 +19,7 @@ function QRCode(props: QRCodeProps) {
     const qrcode = new QRCodeGenerator(inputData, canvas);
     if (canvas) {
       // qrcode.showGrid = true;
+      // qrcode.highlight = true;
       qrcode.render();
       formatString.current = qrcode.formatString;
     }
@@ -36,7 +28,6 @@ function QRCode(props: QRCodeProps) {
   return (
     <>
       <canvas ref={canvasRef} {...props}></canvas>
-      <span>{formatString.current}</span>
     </>
   )
 }
