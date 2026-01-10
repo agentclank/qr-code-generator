@@ -663,6 +663,7 @@ export default class QRCodeGenerator {
     // Set fixed patterns (Finders, Timing, Alignment)
     this.setFunctionPatterns();
     this.functionalMatrix = this.matrix.map(row => [...row]);
+    this.setFormatInfo(this.functionalMatrix, '000000000000000'); //placeholder until mask pattern is determined
     
     // Encode data and place into matrix
     this.bytes = this.encode(data_to_encode);
