@@ -83,10 +83,10 @@ const ERR_LVLS: {[key: string]: ErrorCorrectionLevel} = {
 
 const MaskPatterns: Array<Mask> = [
   ([x, y]: Coord) => (((x + y) % 2) == 0),
-  ([x, y]: Coord) => ((x % 2) == 0),
-  ([x, y]: Coord) => ((y % 3) == 0),
+  ([x, y]: Coord) => ((y % 2) == 0),
+  ([x, y]: Coord) => ((x % 3) == 0),
   ([x, y]: Coord) => (((x + y) % 3) == 0),
-  ([x, y]: Coord) => ((( Math.floor(x / 2) + Math.floor(y / 3) ) % 2) == 0),
+  ([x, y]: Coord) => ((( Math.floor(y / 2) + Math.floor(x / 3) ) % 2) == 0),
   ([x, y]: Coord) => (((x * y) % 2) + ((x * y) % 3) == 0),
   ([x, y]: Coord) => (( (((x * y) % 2) + ((x * y) % 3) ) % 2 ) == 0),
   ([x, y]: Coord) => ((( ((x + y) % 2) + ((x * y) % 3) ) % 2 ) == 0)
@@ -671,12 +671,10 @@ export default class QRCodeGenerator {
     this.dataMatrix = this.drawData(this.bytes);
 
     // Score mask patterns to determine best one
-    // this.determineMaskPattern();
-    this.maskPattern = 0; //for simplicity, using mask pattern 0 only
-    
+    this.determineMaskPattern();
+
     //generate format string and apply to matrix
     this.formatString = this.generateFormatString(this.maskPattern);
-    console.log('Format String:', this.formatString);
     this.setFormatInfo(this.functionalMatrix, this.formatString);
     
     //apply the mask to the data matrix
@@ -726,8 +724,6 @@ export default class QRCodeGenerator {
         case 'k': return this.inputData.length.toString(2).padStart(12, '0');
       }
     }
-
-    throw new Error('Invalid mode or version');
   }
 
   generateFormatString(mask_pattern: number = this.maskPattern): string {
@@ -831,12 +827,6 @@ export default class QRCodeGenerator {
   scoreMatrix(matrix: BitMatrix): number {
     let score = 0;
 
-    /**
-     * Rule 1
-     * Lines of same color with length >= 5
-     * For each found: 3 points for first 5 cells in the line + 1 point for each additional cell
-     */
-
     const scoreLines = (line: Array<0|1>) => {
       let lineLengths: Array<number> = [];
       let count = 1;
@@ -857,12 +847,6 @@ export default class QRCodeGenerator {
     let rows_and_columns: Array<Array<0|1>> = [...matrix, ...matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]))] as Array<Array<0|1>>;
     score += rows_and_columns.reduce((acc, line) => acc + scoreLines(line), 0);
 
-    /**
-     * Rule 2
-     * 2x2 blocks of same color, overlapping blocks count separately
-     * For each found: 3 points
-     */
-
     for (let i=0;i<matrix.length-1;i++) {
       for (let k=0;k<matrix[i].length-1;k++) {
         let cell = matrix[i][k];
@@ -875,12 +859,6 @@ export default class QRCodeGenerator {
         }
       }
     }
-
-    /**
-     * Rule 3
-     * Finder-like patterns in rows or columns
-     * For each found: 40 points
-     */
 
     const scoreFinders = (line: Array<0|1>): number => {
       //check for pattern 10111010000 or 00001011101 (reversed)
@@ -900,12 +878,6 @@ export default class QRCodeGenerator {
 
     score += rows_and_columns.reduce((acc, line) => acc + scoreFinders(line), 0);
 
-    /**
-     * Rule 4
-     * Proportion of dark cells in entire matrix
-     * Find closest multiple of 5% to 50%
-     * For each 5% difference from 50%: 10 points
-     */
     let darkCells = matrix.reduce((acc: number, row) => acc + row.reduce((rowAcc: number, cell) => rowAcc + (cell ?? 0), 0), 0);
     let totalCells = this.gridSize * this.gridSize;
     score += Math.floor(Math.abs(((darkCells / totalCells) * 100) - 50) / 5) * 10;
